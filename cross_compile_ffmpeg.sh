@@ -2,12 +2,6 @@
 # ffmpeg windows cross compile helper/download script, see github repo README
 # Copyright (C) 2012 Roger Pack, the script is under the GPLv3, but output FFmpeg's executables aren't
 # set -x
-sudo apt-get update 
-sudo apt-get install -y libqrencode-dev subversion python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev \
-libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential \
-libass-dev autoconf automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache \
-make pkg-config zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 \
-autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils
 
 yes_no_sel () {
   unset user_input
@@ -2507,8 +2501,8 @@ build_ffmpeg() {
     config_options+=" --enable-libopencore-amrnb"
     config_options+=" --enable-libopencore-amrwb"
     config_options+=" --enable-libopus"
-    config_options+=" --enable-libqrencode"
-    config_options+=" --enable-libquirc"
+  #  config_options+=" --enable-libqrencode"
+  # config_options+=" --enable-libquirc"
     config_options+=" --enable-libsnappy"
     config_options+=" --enable-libsoxr"
     config_options+=" --enable-libspeex"
@@ -2810,8 +2804,8 @@ build_ffmpeg_dependencies() {
   build_fftw # Uses dlfcn.
   build_libsamplerate # Needs libsndfile >= 1.0.6 and fftw >= 0.15.0 for tests. Uses dlfcn.
   build_librubberband
-  build_libqrencode # Add this line to build qrencode
-  build_libquirc # Add this line to build libquirc # Needs libsamplerate, libsndfile, fftw and vamp_plugin. 'configure' will fail otherwise. Eventhough librubberband doesn't necessarily need them (libsndfile only for 'rubberband'[...]
+  #build_libqrencode # Add this line to build qrencode
+  #build_libquirc # Add this line to build libquirc # Needs libsamplerate, libsndfile, fftw and vamp_plugin. 'configure' will fail otherwise. Eventhough librubberband doesn't necessarily need them (libsndfile only for 'rubberband'[...]
   build_frei0r # Needs dlfcn. could use opencv...
   if [[ "$bits_target" != "32" ]]; then
     if [[ $build_svt_hevc = y ]]; then
