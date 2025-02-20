@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
-# ffmpeg windows cross compile helper/download script, see github repo README
-# Copyright (C) 2012 Roger Pack, the script is under the GPLv3, but output FFmpeg's executables aren't
-# set -x
+# FFmpeg Windows cross-compile helper/download script
+# Copyright (C) 2012 Roger Pack, under GPLv3 (FFmpeg executables are not under this license)
 
-echo "sudo dpkg --add-architecture i386"
-echo "sudo apt-get update"
-echo "sudo apt-get install -y libqrencode-dev subversion python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev \
-libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential \
-libass-dev autoconf automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache \
-make pkg-config zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 \
-autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils \
-i686-w64-mingw32-gcc i686-w64-mingw32-g++ x86_64-w64-mingw32-g++"
+set -e  # Exit immediately if a command exits with a non-zero status
 
+# Add i386 architecture and update package lists
+sudo dpkg --add-architecture i386
+sudo apt-get update
+
+# Install required dependencies
+sudo apt-get install -y \
+  libqrencode-dev subversion python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev \
+  libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential \
+  libass-dev autoconf automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache \
+  make pkg-config zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 \
+  autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils \
+  i686-w64-mingw32-gcc i686-w64-mingw32-g++ x86_64-w64-mingw32-g++
+
+echo "Installation of dependencies completed successfully."
 yes_no_sel () {
   unset user_input
   local question="$1"
