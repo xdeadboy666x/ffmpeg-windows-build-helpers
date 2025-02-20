@@ -12,7 +12,7 @@ sudo apt-get install -y \
   libqrencode-dev subversion python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev \
   libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential \
   libass-dev autoconf automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache \
-  make pkg-config zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 \
+  make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 \
   autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils \
 
 echo "Installation of dependencies completed successfully."
