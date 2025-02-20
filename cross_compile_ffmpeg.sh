@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # FFmpeg Windows cross-compile helper/download script
 # Copyright (C) 2012 Roger Pack, under GPLv3 (FFmpeg executables are not under this license)
-
-set -e  # Exit immediately if a command exits with a non-zero status
+# set -x  # Exit immediately if a command exits with a non-zero status
 
 # Add i386 architecture and update package lists
 sudo dpkg --add-architecture i386
@@ -97,7 +96,7 @@ check_missing_packages () {
   if [ "${VENDOR}" = "redhat" ] || [ "${VENDOR}" = "centos" ]; then
     if [ -n "$(hash cmake 2>&1)" ] && [ -n "$(hash cmake3 2>&1)" ]; then missing_packages=('cmake' "${missing_packages[@]}"); fi
   fi
-  if [[ ${#missing_packages[@]} -gt 0 ]]; then
+  if [[ -n "${missing_packages[@]}" ]]; then
     clear
     echo "Could not find the following execs (svn is actually package subversion, makeinfo is actually package texinfo if you're missing them): ${missing_packages[*]}"
     echo 'Install the missing packages before running this script.'
@@ -152,7 +151,7 @@ check_missing_packages () {
         echo "$ sudo apt-get install $apt_missing -y"
         ;;
       *)
-        echo "for OS X (homebrew): brew install ragel wget cvs yasm autogen automake libva-dev autoconf cmake libtool xz pkg-config nasm bzip2 autoconf-archive p7zip coreutils meson llvm" # if edit this edit docker/Dockerfile also :|
+        echo "for OS X (homebrew): brew install ragel wget cvs yasm autogen automake autoconf cmake libtool xz pkg-config nasm bzip2 autoconf-archive p7zip coreutils meson llvm" # if edit this edit docker/Dockerfile also :|
         echo "   and set llvm to your PATH if on catalina"
         echo "for RHEL/CentOS: First ensure you have epel repo available, then run $ sudo yum install ragel subversion texinfo libtool autogen gperf nasm patch unzip pax ed gcc-c++ bison flex yasm automake autoconf gcc zlib-devel cvs bzip2 cmake3 -y"
         echo "for fedora: if your distribution comes with a modern version of cmake then use the same as RHEL/CentOS but replace cmake3 with cmake."
@@ -1405,19 +1404,20 @@ build_libsndfile() {
 build_mpg123() {
   do_svn_checkout svn://scm.orgis.org/mpg123/trunk mpg123_svn r5008
   cd mpg123_svn
-  
-  # Ensure all required tools are installed
-    sudo apt-get install -y libtool libpng12-dev autotools-dev automake gettext autoconf libtool pkg-config 
 
-      libtoolize --force --copy
-      aclocal
-      autoheader
-      autoconf
-      automake --add-missing --copy
+  libtoolize --force --copy
+  aclocal
+  autoheader
+  autoconf
+  automake --add-missing --copy
 
+  # Ensure configure.ac exists before modifying it
+  if [ -f configure.ac ]; then
     echo 'm4_pattern_allow([LT_SYS_MODULE_EXT])' >> configure.ac
-      generic_configure
-      do_make_and_make_install
+  fi
+
+  generic_configure
+  do_make_and_make_install
   cd ..
 }
 
