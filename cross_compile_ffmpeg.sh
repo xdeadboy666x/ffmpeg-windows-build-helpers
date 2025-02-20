@@ -8,14 +8,8 @@ sudo dpkg --add-architecture i386
 sudo apt-get update
 
 # Install required dependencies
-sudo apt-get install -y \
-  libqrencode-dev subversion python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev \
-  libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential \
-  libass-dev autoconf automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache \
-  make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 \
-  autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils \
-
-echo "Installation of dependencies completed successfully."
+sudo apt-get update && sudo apt-get install -y libqrencode-dev python subversion python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libass-dev autoconf libpng-dev automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils
+echo "Installation of dependencies completed successfull
 yes_no_sel () {
   unset user_input
   local question="$1"
@@ -2482,7 +2476,7 @@ build_ffmpeg() {
       local arch=x86_64
     fi
 
-    init_options="--pkg-config=pkg-config --pkg-config-flags=--static --extra-version=ffmpeg-windows-build-helpers --enable-version3 --disable-debug --disable-w32threads"
+    init_options="--pkg-config=pkg-config --pkg-config-flags=--static --extra-version=ffmpeg-windows-build-helpers --disable-docs --enable-version3 --disable-debug --disable-w32threads"
     if [[ $compiler_flavors != "native" ]]; then
       init_options+=" --arch=$arch --target-os=mingw32 --cross-prefix=$cross_prefix"
     else
@@ -2536,6 +2530,7 @@ build_ffmpeg() {
     config_options+=" --enable-opengl"
     config_options+=" --enable-libdav1d"
     config_options+=" --enable-gnutls"
+    config_options+=" --disable-docs"
     
     if [[ "$bits_target" != "32" ]]; then
       if [[ $build_svt_hevc = y ]]; then
@@ -2932,7 +2927,7 @@ original_cppflags='-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0' # Needed for mingw-w64
 # if you specify a march it needs to first so x264's configure will use it :| [ is that still the case ?]
 
 #flags=$(cat /proc/cpuinfo | grep flags)
-#if [[ $flags =~ "ssse3" ]]; then # See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html, https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html and https://stackoverflow.com/questions/19689014/gcc-difference-between-o3-and-os.
+#if [[ $flags =~ "ssse3" ]]; then # See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html, https://gcc.gnu.org/onlinek/gcc/Optimize-Options.html and https://stackoverflow.com/questions/19689014/gcc-difference-between-o3-and-os.
 #  original_cflags='-march=core2 -O2'
 #elif [[ $flags =~ "sse3" ]]; then
 #  original_cflags='-march=prescott -O2'
