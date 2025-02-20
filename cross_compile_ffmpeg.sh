@@ -15,7 +15,6 @@ sudo apt-get install -y \
   libass-dev autoconf automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache \
   make pkg-config zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 \
   autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils \
-  i686-w64-mingw32-gcc i686-w64-mingw32-g++ x86_64-w64-mingw32-g++
 
 echo "Installation of dependencies completed successfully."
 yes_no_sel () {
