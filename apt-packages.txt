@@ -1,0 +1,12 @@
+pkg-config
+make
+git
+autoconf
+automake
+autogen
+yasm
+i686-w64-mingw32-gcc
+i686-w64-mingw32-g++
+x86_64-w64-mingw32-g++
+libtool
+nasm
