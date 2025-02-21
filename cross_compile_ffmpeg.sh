@@ -90,11 +90,18 @@ check_missing_packages () {
   if [ "${VENDOR}" = "redhat" ] || [ "${VENDOR}" = "centos" ]; then
     if [ -n "$(hash cmake 2>&1)" ] && [ -n "$(hash cmake3 2>&1)" ]; then missing_packages=('cmake' "${missing_packages[@]}"); fi
   fi
-  if [[ -n "${missing_packages[@]}" ]]; then
+  if [[ ${#missing_packages[@]} -gt 0 ]]; then
     clear
-    echo "Could not find the following execs (svn is actually package subversion, makeinfo is actually package texinfo if you're missing them): ${missing_packages[*]}"
+    echo "Could not find the following execs (svn is actually package subversion, makeinfo is actually package texinfo if you're missing them):"
+    echo "${missing_packages[*]}"
     echo 'Install the missing packages before running this script.'
     determine_distro
+fi
+
+
+fi
+
+
     
     apt_pkgs='subversion ragel curl texinfo g++ ed bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full meson clang'
 
