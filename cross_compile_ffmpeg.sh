@@ -97,7 +97,6 @@ check_missing_packages () {
     determine_distro
     
     apt_pkgs='subversion ragel curl texinfo g++ ed bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full meson clang'
-    # apt_pkgs="subversion python-is-python3 libfreetype-dev libgnutls-dev libmp3lame-dev libsdl2-dev libtool libva-dev libfreetype-dev libgnutls-dev libmp3lame-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libxcb-shm0-dev libass-dev autoconf automake curl texinfo libpulse-dev llvm g++ ed bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake git-core make pkg-config zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext git-core patch wget xz-utils ninja-build build-essential coreutils"
 
     [[ $DISTRO == "debian" ]] && apt_pkgs="$apt_pkgs libtool-bin ed" # extra for debian
     case "$DISTRO" in
@@ -113,7 +112,7 @@ check_missing_packages () {
         fi
         echo "$ sudo apt-get install $apt_pkgs -y"
         if uname -a | grep  -q -- "-microsoft" ; then
-         echo "NB if you use WSL Ubuntu 20.04 you need to do an extra step: https://github.com/rdp/ffmpeg-windows-build-helpers/issues/452"
+         echo NB if you use WSL Ubuntu 20.04 you need to do an extra step: https://github.com/rdp/ffmpeg-windows-build-helpers/issues/452
 	fi
         ;;
       debian)
