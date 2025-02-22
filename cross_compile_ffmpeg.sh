@@ -4,12 +4,12 @@
 # set -x  # Exit immediately if a command exits with a non-zero status
 
 # Add i386 architecture and update package lists
-sudo dpkg --add-architecture i386
-sudo apt-get update
+# sudo dpkg --add-architecture i386
+#sudo apt-get update
 
-sudo apt-get install -y yasm make automake autoconf git libtool nasm mercurial cmake python3 python3-pip python3-setuptools python3-wheel gperf gettext autopoint byacc flex ragel gtk-doc-tools meson libqrencode-dev subversion wget tar zstd gpg texinfo python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libass-dev autoconf libpng-dev automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
+# sudo apt-get install -y yasm make automake autoconf git libtool nasm mercurial cmake python3 python3-pip python3-setuptools python3-wheel gperf gettext autopoint byacc flex ragel gtk-doc-tools meson libqrencode-dev subversion wget tar zstd gpg texinfo python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libass-dev autoconf libpng-dev automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
 
-echo "Installation of dependencies completed successfull"
+# echo "Installation of dependencies completed successfull"
 
 yes_no_sel () {
   unset user_input
@@ -237,30 +237,24 @@ check_missing_packages () {
 }
 
 determine_distro() {
-    # Determine OS platform from https://askubuntu.com/a/459425/20972
-    UNAME=$(uname | tr "[:upper:]" "[:lower:]")
 
-    # If Linux, try to determine specific distribution
-    if [ "$UNAME" == "linux" ]; then
-        # If available, use LSB to identify distribution
-        if [ -f /etc/lsb-release ] || [ -d /etc/lsb-release.d ]; then
-            local DISTRO
-            DISTRO=$(lsb_release -i | cut -d: -f2 | sed 's/^\t//')
-        # Otherwise, use release info file
-        else
-            local DISTRO
-            DISTRO=$(grep '^ID' /etc/os-release | sed 's#.*=.*#\1#')
-        fi
-        # Export the DISTRO value after assignment
-        export DISTRO
+# Determine OS platform from https://askubuntu.com/a/459425/20972
+UNAME=$(uname | tr "[:upper:]" "[:lower:]")
+# If Linux, try to determine specific distribution
+if [ "$UNAME" == "linux" ]; then
+    # If available, use LSB to identify distribution
+    if [ -f /etc/lsb-release -o -d /etc/lsb-release.d ]; then
+        export DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
+    # Otherwise, use release info file
+    else
+        export DISTRO=$(grep '^ID' /etc/os-release | sed 's#.*=\(\)#\1#')
     fi
-
-    # For everything else (or if above failed), just use generic identifier
-    [ -z "$DISTRO" ] && export DISTRO=$UNAME
-
-    # Clean up
-    unset UNAME
+fi
+# For everything else (or if above failed), just use generic identifier
+[ "$DISTRO" == "" ] && export DISTRO=$UNAME
+unset UNAME
 }
+
 
 intro() {
   cat <<EOL
@@ -398,7 +392,7 @@ install_cross_compiler() {
     reset_cflags
   cd ..
   echo "Done building (or already built) MinGW-w64 cross-compiler(s) successfully..."
-  date # so they can see how long it took :)
+  echo "$(date)" # so they can see how long it took :)
 }
 
 # helper methods for downloading and building projects that can take generic input
@@ -810,7 +804,7 @@ build_bzip2() {
     if [[ ! -f ./libbz2.a ]] || [[ -f $mingw_w64_x86_64_prefix/lib/libbz2.a && ! $(/usr/bin/env md5sum ./libbz2.a) = $(/usr/bin/env md5sum $mingw_w64_x86_64_prefix/lib/libbz2.a) ]]; then # Not built or different build installed
       do_make "$make_prefix_options libbz2.a"
       install -m644 bzlib.h $mingw_w64_x86_64_prefix/include/bzlib.h
-      install -m644 libbz2.a "$mingw_w64_x86_64_prefix/lib/libbz2.a"
+      install -m644 libbz2.a $mingw_w64_x86_64_prefix/lib/libbz2.a
     else
       echo "Already made bzip2-1.0.8"
     fi
@@ -1398,22 +1392,20 @@ build_libsndfile() {
 
 build_mpg123() {
   do_svn_checkout svn://scm.orgis.org/mpg123/trunk mpg123_svn r5008
-  cd mpg123_svn
+  cd mpg123_svn || exit 1  # Ensure cd succeeds
 
-  libtoolize --force --copy
-  aclocal
-  autoheader
-  autoconf
-  automake --add-missing --copy
+  # Regenerate build system
+  autoreconf -fi  
 
-  # Ensure configure.ac exists before modifying it
+  # Modify configure.ac if it exists
   if [ -f configure.ac ]; then
     echo 'm4_pattern_allow([LT_SYS_MODULE_EXT])' >> configure.ac
   fi
 
   generic_configure
   do_make_and_make_install
-  cd ..
+
+  cd .. || exit 1
 }
 
 build_lame() {
@@ -1525,7 +1517,7 @@ build_facebooktransform360() {
 }
 
 build_libbluray() {
-  apt install -y subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
+#  apt install -y subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
   unset JDK_HOME # #268 was causing failure
   do_git_checkout https://code.videolan.org/videolan/libbluray.git
   cd libbluray_git
@@ -1861,7 +1853,7 @@ build_libvpx() {
     fi
     export CROSS="$cross_prefix"  
     # VP8 encoder *requires* sse3 support
-    do_configure "$config_options --prefix=$mingw_w64_x86_64_prefix --enable-ssse3 --enable-static --disable-shared --disable-examples --disable-tools --disable-tools --disable-unit-tests --enable-vp9-highbitdepth --extra-cflags=-fno-asynchronous-unwind-tables --extra-cflags=-mstackrealign" # fno for Error: invalid register for .seh_savexmm
+    do_configure "$config_options --prefix=$mingw_w64_x86_64_prefix --enable-ssse3 --enable-static --disable-shared --disable-examples --disable-tools --disable-docs --disable-unit-tests --enable-vp9-highbitdepth --extra-cflags=-fno-asynchronous-unwind-tables --extra-cflags=-mstackrealign" # fno for Error: invalid register for .seh_savexmm
     do_make_and_make_install
     unset CROSS
   cd ..
@@ -2263,7 +2255,7 @@ build_vlc() {
   fi
   export DVDREAD_LIBS='-ldvdread -ldvdcss -lpsapi'
   do_configure "--disable-libgcrypt --disable-a52 --host=$host_target --disable-lua --disable-mad --enable-qt --disable-sdl --disable-mod" # don't have lua mingw yet, etc. [vlc has --disable-sdl [?]] x265 disabled until we care enough... Looks like the bluray problem was related to the BLURAY_LIBS definition. [not sure what's wrong with libmod]
-  find . -name "*.exe" -print0 | xargs -0 rm -f # try to force a rebuild...though there are tons of .a files we aren't rebuilding as well FWIW...:|
+  rm -f `find . -name *.exe` # try to force a rebuild...though there are tons of .a files we aren't rebuilding as well FWIW...:|
   rm -f already_ran_make* # try to force re-link just in case...
   do_make
   # do some gymnastics to avoid building the mozilla plugin for now [couldn't quite get it to work]
@@ -2532,6 +2524,7 @@ build_ffmpeg() {
     config_options+=" --enable-opengl"
     config_options+=" --enable-libdav1d"
     config_options+=" --enable-gnutls"
+    
     if [[ "$bits_target" != "32" ]]; then
       if [[ $build_svt_hevc = y ]]; then
         # SVT-HEVC
@@ -3120,7 +3113,7 @@ if [[ $compiler_flavors == "multi" || $compiler_flavors == "win64" ]]; then
   make_prefix_options="CC=${cross_prefix}gcc AR=${cross_prefix}ar PREFIX=$mingw_w64_x86_64_prefix RANLIB=${cross_prefix}ranlib LD=${cross_prefix}ld STRIP=${cross_prefix}strip CXX=${cross_prefix}g++"
   work_dir="$(realpath $cur_dir/win64)"
   mkdir -p "$work_dir"
-  cd "$work_dir" || exit 1
+  cd "$work_dir"
     build_ffmpeg_dependencies
     build_apps
   cd ..
