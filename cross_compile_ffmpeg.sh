@@ -7,9 +7,10 @@
 sudo dpkg --add-architecture i386
 sudo apt-get update
 
-# Install required dependencies
-sudo apt-get update && sudo apt-get install -y yasm make automake autoconf git libtool nasm mercurial cmake python3 python3-pip python3-setuptools python3-wheel gperf gettext autopoint byacc flex ragel gtk-doc-tools meson libqrencode-dev subversion wget tar zstd gpg texinfo python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libass-dev autoconf libpng-dev automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils
+sudo apt-get install -y yasm make automake autoconf git libtool nasm mercurial cmake python3 python3-pip python3-setuptools python3-wheel gperf gettext autopoint byacc flex ragel gtk-doc-tools meson libqrencode-dev subversion wget tar zstd gpg texinfo python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libass-dev autoconf libpng-dev automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
+
 echo "Installation of dependencies completed successfull"
+
 yes_no_sel () {
   unset user_input
   local question="$1"
@@ -29,7 +30,7 @@ yes_no_sel () {
   # downcase it
   user_input=${user_input,,}
 }
-
+a
 set_box_memory_size_bytes() {
   if [[ $OSTYPE == darwin* ]]; then
     box_memory_size_bytes=20000000000  # 20G fake it out for now :|
@@ -1523,6 +1524,7 @@ build_facebooktransform360() {
 }
 
 build_libbluray() {
+	apt install -y subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
   unset JDK_HOME # #268 was causing failure
   do_git_checkout https://code.videolan.org/videolan/libbluray.git
   cd libbluray_git
