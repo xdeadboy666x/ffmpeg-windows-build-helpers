@@ -30,7 +30,7 @@ yes_no_sel () {
   # downcase it
   user_input=${user_input,,}
 }
-a
+
 set_box_memory_size_bytes() {
   if [[ $OSTYPE == darwin* ]]; then
     box_memory_size_bytes=20000000000  # 20G fake it out for now :|
@@ -689,7 +689,7 @@ apply_patch() {
     patch_type="-p0" # some are -p1 unfortunately, git's default
   fi
   local patch_name
-patch_name=$(basename "$url")
+  patch_name=$(basename "$url")
   local patch_done_name="$patch_name.done"
   if [[ ! -e $patch_done_name ]]; then
     if [[ -f $patch_name ]]; then
@@ -1145,7 +1145,7 @@ build_fontconfig() {
   download_and_unpack_file https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.xz
   cd fontconfig-2.13.92
     #export CFLAGS= # compile fails with -march=sandybridge ... with mingw 4.0.6 at least ...
-    generic_configure "--enable-iconv --enable-libxml2  --with-libiconv" # Use Libxml2 instead of Expat.
+    generic_configure "--enable-iconv --enable-libxml2 --disable-docs --with-libiconv" # Use Libxml2 instead of Expat.
     do_make_and_make_install
     #reset_cflags
   cd ..
@@ -1317,7 +1317,8 @@ build_openssl-1.1.1() {
           ${cross_prefix}strip $sharedlib
         done
         sed "s/$/\r/" LICENSE > LICENSE.txt
-        7z a -mx=9 "$archive" -- ./*.dll LICENSE.txt && rm -f LICENSE.txt
+        7z a -mx=9 $archive *.dll LICENSE.txt && rm -f LICENSE.txt
+	# 7z a -mx=9 "$archive" -- ./*.dll LICENSE.txt && rm -f LICENSE.txt
       fi
     else
       do_make_install "" "install_dev"
@@ -1524,7 +1525,7 @@ build_facebooktransform360() {
 }
 
 build_libbluray() {
-	apt install -y subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
+  apt install -y subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
   unset JDK_HOME # #268 was causing failure
   do_git_checkout https://code.videolan.org/videolan/libbluray.git
   cd libbluray_git
@@ -1860,7 +1861,7 @@ build_libvpx() {
     fi
     export CROSS="$cross_prefix"  
     # VP8 encoder *requires* sse3 support
-    do_configure "$config_options --prefix=$mingw_w64_x86_64_prefix --enable-ssse3 --enable-static --disable-shared --disable-examples --disable-tools  --disable-unit-tests --enable-vp9-highbitdepth --extra-cflags=-fno-asynchronous-unwind-tables --extra-cflags=-mstackrealign" # fno for Error: invalid register for .seh_savexmm
+    do_configure "$config_options --prefix=$mingw_w64_x86_64_prefix --enable-ssse3 --enable-static --disable-shared --disable-examples --disable-tools --disable-tools --disable-unit-tests --enable-vp9-highbitdepth --extra-cflags=-fno-asynchronous-unwind-tables --extra-cflags=-mstackrealign" # fno for Error: invalid register for .seh_savexmm
     do_make_and_make_install
     unset CROSS
   cd ..
@@ -2477,7 +2478,7 @@ build_ffmpeg() {
       local arch=x86_64
     fi
 
-    init_options="--pkg-config=pkg-config --pkg-config-flags=--static --extra-version=ffmpeg-windows-build-helpers  --enable-version3 --disable-debug --disable-w32threads"
+    init_options="--pkg-config=pkg-config --pkg-config-flags=--static --extra-version=ffmpeg-windows-build-helpers --enable-version3 --disable-debug --disable-w32threads"
     if [[ $compiler_flavors != "native" ]]; then
       init_options+=" --arch=$arch --target-os=mingw32 --cross-prefix=$cross_prefix"
     else
