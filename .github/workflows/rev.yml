@@ -1,3 +1,20 @@
+name: 'Dependency review'
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ "master" ]
+
+# If using a dependency submission action in this workflow this permission will need to be set to:
+#
+# permissions:
+#   contents: write
+#
+# https://docs.github.com/en/enterprise-cloud@latest/code-security/supply-chain-security/understanding-your-software-supply-chain/using-the-dependency-submission-api
+permissions:
+  contents: write
+  # Write permissions for pull-requests are required for using the `comment-summary-in-pr` option, comment out if you aren't using this option
+  pull-requests: write
+
 jobs:
   dependency-review:
     runs-on: ubuntu-22.04
