@@ -289,14 +289,15 @@ The resultant binary may not be distributable, but can be useful for in-house us
 }
 
 pick_compiler_flavors() {
-  while [[ "$compiler_flavors" != [1-5] ]]; do
-    if [[ -n "${unknown_opts[@]}" ]]; then
+  while [[ ! "$compiler_flavors" =~ ^[1-5]$ ]]; do
+    if [[ ${#unknown_opts[@]} -gt 0 ]]; then  # Fix for SC2199
       echo -n 'Unknown option(s)'
       for unknown_opt in "${unknown_opts[@]}"; do
         echo -n " '$unknown_opt'"
       done
       echo ', ignored.'; echo
     fi
+
     cat <<'EOF'
 What version of MinGW-w64 would you like to build or update?
   1. Both Win32 and Win64
@@ -306,8 +307,9 @@ What version of MinGW-w64 would you like to build or update?
   5. Exit
 EOF
     echo -n 'Input your choice [1-5]: '
-    read compiler_flavors
+    read -r compiler_flavors
   done
+}
   case "$compiler_flavors" in
   1 ) compiler_flavors=multi ;;
   2 ) compiler_flavors=win32 ;;
