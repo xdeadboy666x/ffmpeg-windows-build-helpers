@@ -767,11 +767,11 @@ do_git_checkout_and_make_install() {
 
 generic_configure_make_install() {
   if [ $# -gt 0 ]; then
-    echo "cant pass parameters to this method today, they'd be a bit ambiguous"
-    echo "The following arguments where passed: ${@}"
+    echo "Can't pass parameters to this method today, they'd be a bit ambiguous."
+    echo "The following arguments were passed: $@"  # Fixed typo and argument expansion
     exit 1
   fi
-  generic_configure # no parameters, force myself to break it up if needed
+  generic_configure  # No parameters, force myself to break it up if needed
   do_make_and_make_install
 }
 
