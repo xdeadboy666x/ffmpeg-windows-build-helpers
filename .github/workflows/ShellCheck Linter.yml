@@ -15,5 +15,5 @@ jobs:
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
-          path: cross_compile_ffmpeg.sh
+          path: $GITHUB_WORKSPACE/cross_compile_ffmpeg.sh
           severity: error
