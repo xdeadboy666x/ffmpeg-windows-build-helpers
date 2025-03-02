@@ -309,7 +309,6 @@ EOF
     echo -n 'Input your choice [1-5]: '
     read -r compiler_flavors
   done
-}
   case "$compiler_flavors" in
   1 ) compiler_flavors=multi ;;
   2 ) compiler_flavors=win32 ;;
