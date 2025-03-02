@@ -2,10 +2,6 @@ name: ShellCheck Linter
 
 on:
   workflow_dispatch:
-    branches:
-      - main
-    branches:
-      - main
 
 jobs:
   shellcheck:
