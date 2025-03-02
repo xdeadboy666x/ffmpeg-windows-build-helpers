@@ -750,7 +750,8 @@ generic_download_and_make_and_install() {
   fi
   local extra_configure_options="$3"
   download_and_unpack_file $url $english_name
-  cd $english_name || exit "unable to cd, may need to specify dir it will unpack to as parameter"
+  cd "$english_name" || { echo "Unable to cd, may need to specify the directory it will unpack to as a parameter" >&2; exit 1; }
+  # cd $english_name || exit "unable to cd, may need to specify dir it will unpack to as parameter"
   generic_configure "$extra_configure_options"
   do_make_and_make_install
   cd ..
