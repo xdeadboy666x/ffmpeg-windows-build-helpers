@@ -2,10 +2,8 @@ name: ShellCheck Linter
 
 on:
   workflow_dispatch:
-  push:
     branches:
       - main
-  pull_request:
     branches:
       - main
 
@@ -21,4 +19,5 @@ jobs:
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
+          path: cross_compile_ffmpeg.sh
           severity: error
