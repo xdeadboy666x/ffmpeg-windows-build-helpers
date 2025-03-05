@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
-# FFmpeg Windows cross-compile helper/download script
-# Copyright (C) 2012 Roger Pack, under GPLv3 (FFmpeg executables are not under this license)
-# set -x  # Exit immediately if a command exits with a non-zero status
-
-# Add i386 architecture and update package lists
-# sudo dpkg --add-architecture i386
-#sudo apt-get update
-
-# sudo apt-get install -y yasm make automake autoconf git libtool nasm mercurial cmake python3 python3-pip python3-setuptools python3-wheel gperf gettext autopoint byacc flex ragel gtk-doc-tools meson libqrencode-dev subversion wget tar zstd gpg texinfo python-is-python3 libfreetype-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libass-dev autoconf libpng-dev automake autogen curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git ccache make zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext patch wget xz-utils ninja-build coreutils subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
-
-# echo "Installation of dependencies completed successfull"
+# ffmpeg windows cross compile helper/download script, see github repo README
+# Copyright (C) 2012 Roger Pack, the script is under the GPLv3, but output FFmpeg's executables aren't
+# set -x
 
 yes_no_sel () {
   unset user_input
@@ -18,7 +10,7 @@ yes_no_sel () {
   local default_answer="$1"
   while [[ "$user_input" != [YyNn] ]]; do
     echo -n "$question"
-    read -r user_input
+    read user_input
     if [[ -z "$user_input" ]]; then
       echo "using default $default_answer"
       user_input=$default_answer
@@ -28,29 +20,26 @@ yes_no_sel () {
     fi
   done
   # downcase it
-  user_input=${user_input,,}
+  user_input=$(echo $user_input | tr '[A-Z]' '[a-z]')
 }
 
 set_box_memory_size_bytes() {
   if [[ $OSTYPE == darwin* ]]; then
-    box_memory_size_bytes=20000000000  # 20G fake it out for now :|
+    box_memory_size_bytes=20000000000 # 20G fake it out for now :|
   else
-    local ram_kilobytes swap_kilobytes
-    ram_kilobytes=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    swap_kilobytes=$(grep SwapTotal /proc/meminfo | awk '{print $2}')
-    box_memory_size_bytes=$((ram_kilobytes * 1024 + swap_kilobytes * 1024))
+    local ram_kilobytes=`grep MemTotal /proc/meminfo | awk '{print $2}'`
+    local swap_kilobytes=`grep SwapTotal /proc/meminfo | awk '{print $2}'`
+    box_memory_size_bytes=$[ram_kilobytes * 1024 + swap_kilobytes * 1024]
   fi
 }
 
 function sortable_version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
 
 at_least_required_version() { # params: required actual
-  local sortable_required
-  sortable_required=$(sortable_version "$1")
-  sortable_required="${sortable_required#"${sortable_required%%[!0]*}"}" # Remove leading zeroes
-  local sortable_actual
-  sortable_actual=$(sortable_version "$2")
-  sortable_actual="${sortable_actual#"${sortable_actual%%[!0]*}"}" # Remove leading zeroes
+  local sortable_required=$(sortable_version $1)
+  sortable_required=$(echo $sortable_required | sed 's/^0*//') # remove preceding zeroes, which bash later interprets as octal or screwy
+  local sortable_actual=$(sortable_version $2)
+  sortable_actual=$(echo $sortable_actual | sed 's/^0*//')
   [[ "$sortable_actual" -ge "$sortable_required" ]]
 }
 
@@ -91,11 +80,12 @@ check_missing_packages () {
   if [ "${VENDOR}" = "redhat" ] || [ "${VENDOR}" = "centos" ]; then
     if [ -n "$(hash cmake 2>&1)" ] && [ -n "$(hash cmake3 2>&1)" ]; then missing_packages=('cmake' "${missing_packages[@]}"); fi
   fi
-  if [[ ${#missing_packages[@]} -gt 0 ]]; then
+  if [[ -n "${missing_packages[@]}" ]]; then
     clear
     echo "Could not find the following execs (svn is actually package subversion, makeinfo is actually package texinfo if you're missing them): ${missing_packages[*]}"
     echo 'Install the missing packages before running this script.'
     determine_distro
+
     apt_pkgs='subversion ragel curl texinfo g++ ed bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full meson clang'
 
     [[ $DISTRO == "debian" ]] && apt_pkgs="$apt_pkgs libtool-bin ed" # extra for debian
@@ -153,7 +143,7 @@ check_missing_packages () {
     esac
     exit 1
   fi
-  
+
   export REQUIRED_CMAKE_VERSION="3.0.0"
   for cmake_binary in 'cmake' 'cmake3'; do
     # We need to check both binaries the same way because the check for installed packages will work if *only* cmake3 is installed or
@@ -162,7 +152,7 @@ check_missing_packages () {
     # the version of cmake required move up to, say, 3.1.0 and the cmake3 package still only pulls in 3.0.0 flat, then the user having manually
     # installed cmake at a higher version wouldn't be detected.
     if hash "${cmake_binary}"  &> /dev/null; then
-      cmake_version="$( "${cmake_binary}" --version | sed -e "s#${cmake_binary}##g" | head -n 1 | tr -cd '[:digit:].\n' )"
+      cmake_version="$( "${cmake_binary}" --version | sed -e "s#${cmake_binary}##g" | head -n 1 | tr -cd '[0-9.\n]' )"
       if at_least_required_version "${REQUIRED_CMAKE_VERSION}" "${cmake_version}"; then
         export cmake_command="${cmake_binary}"
         break
@@ -194,14 +184,12 @@ check_missing_packages () {
   # because of all the trailing lines of stuff
   export REQUIRED_YASM_VERSION="1.2.0" # export ???
   local yasm_binary=yasm
-  local yasm_version
-  yasm_version="$( "${yasm_binary}" --version | sed -e "s#${yasm_binary}##g" | head -n 1 | tr -dc '[:digit:].\n' )"
+  local yasm_version="$( "${yasm_binary}" --version |sed -e "s#${yasm_binary}##g" | head -n 1 | tr -dc '[0-9.\n]' )"
   if ! at_least_required_version "${REQUIRED_YASM_VERSION}" "${yasm_version}"; then
     echo "your yasm version is too old $yasm_version wanted ${REQUIRED_YASM_VERSION}"
     exit 1
   fi
-  local meson_version
-  meson_version=$(meson --version)
+  local meson_version=`meson --version`
   if ! at_least_required_version "0.49.2" "${meson_version}"; then
     echo "your meson version is too old $meson_version wanted 0.49.2"
     exit 1
@@ -212,7 +200,7 @@ check_missing_packages () {
   # check WSL for interop setting make sure its disabled
   # check WSL for kernel version look for version 4.19.128 current as of 11/01/2020
   if uname -a | grep  -iq -- "-microsoft" ; then
-    if grep -q enabled /proc/sys/fs/binfmt_misc/WSLInterop; then
+    if cat /proc/sys/fs/binfmt_misc/WSLInterop | grep -q enabled ; then
       echo "windows WSL detected: you must first disable 'binfmt' by running this
       sudo bash -c 'echo 0 > /proc/sys/fs/binfmt_misc/WSLInterop'
       then try again"
@@ -225,7 +213,7 @@ check_missing_packages () {
       echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
     }
 
-    if [ "$(version "$KERNVER")" -lt "$(version "$MINIMUM_KERNEL_VERSION")" ]; then
+    if [ $(version $KERNVER) -lt $(version $MINIMUM_KERNEL_VERSION) ]; then
       echo "Windows Subsystem for Linux (WSL) detected - kernel not at minumum version required: $MINIMUM_KERNEL_VERSION
       Please update via windows update then try again"
       #exit 1
@@ -266,14 +254,14 @@ intro() {
   the sandbox directory, since it will have some hard coded paths in there.
   You can, of course, rebuild ffmpeg from within it, etc.
 EOL
-  echo "$(date)" # for timestamping super long builds LOL
+  echo `date` # for timestamping super long builds LOL
   if [[ $sandbox_ok != 'y' && ! -d sandbox ]]; then
     echo
     echo "Building in $PWD/sandbox, will use ~ 12GB space!"
     echo
   fi
   mkdir -p "$cur_dir"
-  cd "$cur_dir" || exit
+  cd "$cur_dir"
   if [[ $disable_nonfree = "y" ]]; then
     non_free="n"
   else
@@ -289,15 +277,14 @@ The resultant binary may not be distributable, but can be useful for in-house us
 }
 
 pick_compiler_flavors() {
-  while [[ ! "$compiler_flavors" =~ ^[1-5]$ ]]; do
-    if [[ ${#unknown_opts[@]} -gt 0 ]]; then  # Fix for SC2199
+  while [[ "$compiler_flavors" != [1-5] ]]; do
+    if [[ -n "${unknown_opts[@]}" ]]; then
       echo -n 'Unknown option(s)'
       for unknown_opt in "${unknown_opts[@]}"; do
         echo -n " '$unknown_opt'"
       done
       echo ', ignored.'; echo
     fi
-
     cat <<'EOF'
 What version of MinGW-w64 would you like to build or update?
   1. Both Win32 and Win64
@@ -307,7 +294,7 @@ What version of MinGW-w64 would you like to build or update?
   5. Exit
 EOF
     echo -n 'Input your choice [1-5]: '
-    read -r compiler_flavors
+    read compiler_flavors
   done
   case "$compiler_flavors" in
   1 ) compiler_flavors=multi ;;
@@ -323,7 +310,7 @@ EOF
 download_gcc_build_script() {
     local zeranoe_script_name=$1
     rm -f $zeranoe_script_name || exit 1
-    curl -4 "file://$patch_dir/$zeranoe_script_name" -O --fail || exit 1
+    curl -4 file://$patch_dir/$zeranoe_script_name -O --fail || exit 1
     chmod u+x $zeranoe_script_name
 }
 
@@ -348,7 +335,7 @@ install_cross_compiler() {
   fi
 
   mkdir -p cross_compilers
-  cd cross_compilers || exit 
+  cd cross_compilers
 
     unset CFLAGS # don't want these "windows target" settings used the compiler itself since it creates executables to run on the local box (we have a parameter allowing them to set them for the script "all builds" basically)
     # pthreads version to avoid having to use cvs for it
@@ -392,7 +379,7 @@ install_cross_compiler() {
     reset_cflags
   cd ..
   echo "Done building (or already built) MinGW-w64 cross-compiler(s) successfully..."
-  echo "$(date)" # so they can see how long it took :)
+  echo `date` # so they can see how long it took :)
 }
 
 # helper methods for downloading and building projects that can take generic input
@@ -446,7 +433,7 @@ do_git_checkout() {
     to_dir=$(basename $repo_url | sed s/\.git/_git/) # http://y/abc.git -> abc_git
   fi
   local desired_branch="$3"
-  if [ ! -d "$to_dir" ]; then
+  if [ ! -d $to_dir ]; then
     retry_git_or_die $repo_url $to_dir
     cd $to_dir
   else
@@ -514,7 +501,7 @@ do_configure() {
 
     echo "configuring $english_name ($PWD) as $ PKG_CONFIG_PATH=$PKG_CONFIG_PATH PATH=$mingw_bin_path:\$PATH $configure_name $configure_options" # say it now in case bootstrap fails etc.
     echo "all touch files" already_configured* touchname= "$touch_name"
-    echo "config options ${configure_options} ${configure_name}"
+    echo "config options "$configure_options $configure_name""
     if [ -f bootstrap ]; then
       ./bootstrap # some need this to create ./configure :|
     fi
@@ -682,8 +669,7 @@ apply_patch() {
   if [[ -z $patch_type ]]; then
     patch_type="-p0" # some are -p1 unfortunately, git's default
   fi
-  local patch_name
-  patch_name=$(basename "$url")
+  local patch_name=$(basename $url)
   local patch_done_name="$patch_name.done"
   if [[ ! -e $patch_done_name ]]; then
     if [[ -f $patch_name ]]; then
@@ -750,8 +736,7 @@ generic_download_and_make_and_install() {
   fi
   local extra_configure_options="$3"
   download_and_unpack_file $url $english_name
-  cd "$english_name" || { echo "Unable to cd, may need to specify the directory it will unpack to as a parameter" >&2; exit 1; }
-  # cd $english_name || exit "unable to cd, may need to specify dir it will unpack to as parameter"
+  cd $english_name || exit "unable to cd, may need to specify dir it will unpack to as parameter"
   generic_configure "$extra_configure_options"
   do_make_and_make_install
   cd ..
@@ -768,12 +753,11 @@ do_git_checkout_and_make_install() {
 
 generic_configure_make_install() {
   if [ $# -gt 0 ]; then
-    echo "Can't pass parameters to this method today, they'd be a bit ambiguous."
-    echo "The following arguments were passed: ${*}"
-    # echo "The following arguments were passed: $@"  # Fixed typo and argument expansion
+    echo "cant pass parameters to this method today, they'd be a bit ambiguous"
+    echo "The following arguments where passed: ${@}"
     exit 1
   fi
-  generic_configure  # No parameters, force myself to break it up if needed
+  generic_configure # no parameters, force myself to break it up if needed
   do_make_and_make_install
 }
 
@@ -842,7 +826,7 @@ build_zlib() {
 
 build_iconv() {
   download_and_unpack_file https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz
-  cd libiconv-1.16 || exit 1
+  cd libiconv-1.16
     generic_configure "--disable-nls"
     do_make "install-lib" # No need for 'do_make_install', because 'install-lib' already has install-instructions.
   cd ..
@@ -890,7 +874,7 @@ build_amd_amf_headers() {
 }
 
 build_nv_headers() {
-  if [[ $ffmpeg_git_checkout_version == *"n6.0"* ]] || [[ $ffmpeg_git_checkout_version == *"n5.1"* ]] || [[ $ffmpeg_git_checkout_version == *"n5.0"* ]] || [[ $ffmpeg_git_checkout_version == *"n4.4"* ]] || [[ $ffmpeg_git_checkout_version == *"n4.3"* ]] || [[ $ffmpeg_git_checkout_version == *"n4.2"* ]] || [[ $ffmpeg_git_checkout_version == *"n4.1"* ]] || [[ $ffmpeg_git_checkout_version == *"n3.4"* ]] || [[ $ffmpeg_git_checkout_version == *"n3.2"* ]] || [[ $ffmpeg_git_checkout_version == *"n2.8"* ]]; then
+  if [[ $ffmpeg_git_checkout_version == *"n6.0"* ]] || [[ $ffmpeg_git_checkout_version == *"n5"* ]] || [[ $ffmpeg_git_checkout_version == *"n4"* ]] || [[ $ffmpeg_git_checkout_version == *"n3"* ]] || [[ $ffmpeg_git_checkout_version == *"n2"* ]]; then
     # nv_headers for old versions
     do_git_checkout https://github.com/FFmpeg/nv-codec-headers.git nv-codec-headers_git n12.0.16.1
   else
@@ -1314,7 +1298,6 @@ build_openssl-1.1.1() {
         done
         sed "s/$/\r/" LICENSE > LICENSE.txt
         7z a -mx=9 $archive *.dll LICENSE.txt && rm -f LICENSE.txt
-	# 7z a -mx=9 "$archive" -- ./*.dll LICENSE.txt && rm -f LICENSE.txt
       fi
     else
       do_make_install "" "install_dev"
@@ -1350,7 +1333,7 @@ build_libopus() {
 
 build_libspeexdsp() {
   do_git_checkout https://github.com/xiph/speexdsp.git
-  cd speexdsp_git || exit 1
+  cd speexdsp_git
     generic_configure "--disable-examples"
     do_make_and_make_install
   cd ..
@@ -1370,7 +1353,7 @@ build_libspeex() {
 
 build_libtheora() {
   do_git_checkout https://github.com/xiph/theora.git
-  cd theora_git || exit 1
+  cd theora_git
     generic_configure "--disable-doc --disable-spec --disable-oggtest --disable-vorbistest --disable-examples --disable-asm" # disable asm: avoid [theora @ 0x1043144a0]error in unpack_block_qpis in 64 bit... [OK OS X 64 bit tho...]
     do_make_and_make_install
   cd ..
@@ -1393,21 +1376,12 @@ build_libsndfile() {
 }
 
 build_mpg123() {
-  do_svn_checkout svn://scm.orgis.org/mpg123/trunk mpg123_svn r5008
-  cd mpg123_svn || exit 1  # Ensure cd succeeds
-
-  # Regenerate build system
-  autoreconf -fi  
-
-  # Modify configure.ac if it exists
-  if [ -f configure.ac ]; then
-    echo 'm4_pattern_allow([LT_SYS_MODULE_EXT])' >> configure.ac
-  fi
-
-  generic_configure
-  do_make_and_make_install
-
-  cd .. || exit 1
+  do_svn_checkout svn://scm.orgis.org/mpg123/trunk mpg123_svn r5008 # avoid Think again failure
+  cd mpg123_svn
+    autoreconf -fi
+    generic_configure
+    do_make_and_make_install
+  cd ..
 }
 
 build_lame() {
@@ -1519,7 +1493,6 @@ build_facebooktransform360() {
 }
 
 build_libbluray() {
-#  apt install -y subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf autogen automake build-essential cmake make git libtool
   unset JDK_HOME # #268 was causing failure
   do_git_checkout https://code.videolan.org/videolan/libbluray.git
   cd libbluray_git
@@ -1738,7 +1711,7 @@ build_libdecklink() {
     url=https://gitlab.com/m-ab-s/decklink-headers.git
   fi
   do_git_checkout $url
-  cd decklink-headers_git || exit 1
+  cd decklink-headers_git
     do_make_install PREFIX=$mingw_w64_x86_64_prefix
   cd ..
 }
@@ -1784,6 +1757,13 @@ build_libass() {
   do_git_checkout_and_make_install https://github.com/libass/libass.git
 }
 
+build_vulkan() {
+  do_git_checkout https://github.com/KhronosGroup/Vulkan-Headers.git
+  cd Vulkan-Headers_git
+    do_cmake_and_install "-DCMAKE_BUILD_TYPE=Release"
+  cd ..
+}
+
 build_libaribb24() {
   do_git_checkout https://github.com/nkoriyama/aribb24
   cd aribb24
@@ -1793,7 +1773,7 @@ build_libaribb24() {
 
 build_libaribcaption() {
   do_git_checkout https://github.com/xqq/libaribcaption
-  cd libaribcaption || exit 1
+  cd libaribcaption
   mkdir build
   cd build
   do_cmake_from_build_dir .. "-DCMAKE_BUILD_TYPE=Release"
@@ -1844,7 +1824,7 @@ build_libxvid() {
 
 build_libvpx() {
   do_git_checkout https://chromium.googlesource.com/webm/libvpx.git libvpx_git "origin/main"
-  cd libvpx_git || exit 1
+  cd libvpx_git
     apply_patch file://$patch_dir/vpx_160_semaphore.patch -p1 # perhaps someday can remove this after 1.6.0 or mingw fixes it LOL
     if [[ $compiler_flavors == "native" ]]; then
       local config_options=""
@@ -2085,47 +2065,9 @@ build_libdvdnav() {
   cd ..
 }
 
-#build_libqrencode() {
-#  sudo apt update && sudo apt-get install -y autoconf automake autotools-dev libsdl2-dev libtool pkg-config cmake libpng-dev
-#  retry_git_or_die https://github.com/xdeadboy666x/libqrencode.git libqrencode_git
-#  cd libqrencode_git
-#    ./autogen.sh
-# autoupdate   
-#   do_configure "--libdir=${mingw_w64_x86_64_prefix}/lib --with-tests"
-#    make check
-#    make distcheck
-#    make install    
-#  cd ..
-#}
-
 build_libdvdcss() {
   generic_download_and_make_and_install https://download.videolan.org/pub/videolan/libdvdcss/1.2.13/libdvdcss-1.2.13.tar.bz2
 }
-
-#build_quirc() {
-#  # Download and unpack the quirc source code
-#  download_and_unpack_file https://github.com/fukuchi/quirc/archive/refs/tags/v0.3.0.tar.gz 
-#  cd quirc-0.3.0 || exit 1  # Ensure the directory change is successful
-
-  # Check if the configure script exists; if not, run autogen.sh
-#  if [[ ! -f ./configure ]]; then
-#    ./autogen.sh
-#  fi
-
-  # Run the generic configure, make, and install process
-# generic_configure_make_install
-
-  # Build specific targets
-#  make libquirc.a libquirc.so qrtest inspect quirc-scanner quirc-demo
-
-  # Install the library and demos
-#  make install
-
-  # Modify the pkg-config file if necessary
-#  sed -i.bak 's/-lquirc.*/-lquirc -lz -lm/' "$PKG_CONFIG_PATH/quirc.pc"
-
-#  cd .. || exit 1  # Ensure you return to the previous directory successfully
-#}
 
 build_libjpeg_turbo() {
   do_git_checkout https://github.com/libjpeg-turbo/libjpeg-turbo libjpeg-turbo_git "origin/main"
@@ -2346,7 +2288,7 @@ build_mplayer() {
   build_libdvdnav
 
   download_and_unpack_file https://sourceforge.net/projects/mplayer-edl/files/mplayer-export-snapshot.2014-05-19.tar.bz2 mplayer-export-2014-05-19
-  cd mplayer-export-2014-05-19 || exit 1
+  cd mplayer-export-2014-05-19
     do_git_checkout https://github.com/FFmpeg/FFmpeg ffmpeg d43c303038e9bd # known compatible commit
     export LDFLAGS='-lpthread -ldvdnav -ldvdread -ldvdcss' # not compat with newer dvdread possibly? huh wuh?
     export CFLAGS=-DHAVE_DVDCSS_DVDCSS_H
@@ -2505,8 +2447,6 @@ build_ffmpeg() {
     config_options+=" --enable-libopencore-amrnb"
     config_options+=" --enable-libopencore-amrwb"
     config_options+=" --enable-libopus"
-  #  config_options+=" --enable-libqrencode"
-  # config_options+=" --enable-libquirc"
     config_options+=" --enable-libsnappy"
     config_options+=" --enable-libsoxr"
     config_options+=" --enable-libspeex"
@@ -2526,7 +2466,11 @@ build_ffmpeg() {
     config_options+=" --enable-opengl"
     config_options+=" --enable-libdav1d"
     config_options+=" --enable-gnutls"
-    
+
+    if [[ $OSTYPE != darwin* ]]; then
+      config_options+=" --enable-vulkan"
+    fi
+
     if [[ "$bits_target" != "32" ]]; then
       if [[ $build_svt_hevc = y ]]; then
         # SVT-HEVC
@@ -2535,8 +2479,8 @@ build_ffmpeg() {
         if [[ $ffmpeg_git_checkout_version == *"n4.4"* ]] || [[ $ffmpeg_git_checkout_version == *"n4.3"* ]] || [[ $ffmpeg_git_checkout_version == *"n4.2"* ]]; then
           git apply "$work_dir/SVT-HEVC_git/ffmpeg_plugin/n4.4-0001-lavc-svt_hevc-add-libsvt-hevc-encoder-wrapper.patch"
           git apply "$patch_dir/SVT-HEVC-0002-doc-Add-libsvt_hevc-encoder-docs.patch"  # upstream patch does not apply on current ffmpeg master
-        elif [[ $ffmpeg_git_checkout_version == *"n4.1"* ]] || [[ $ffmpeg_git_checkout_version == *"n3.4"* ]] || [[ $ffmpeg_git_checkout_version == *"n3.2"* ]] || [[ $ffmpeg_git_checkout_version == *"n2.8"* ]]; then
-	  : # too old...
+        elif [[ $ffmpeg_git_checkout_version == *"n4.1"* ]] || [[ $ffmpeg_git_checkout_version == *"n3"* ]] || [[ $ffmpeg_git_checkout_version == *"n2"* ]]; then
+          : # too old...
         else
           # newer:
           git apply "$work_dir/SVT-HEVC_git/ffmpeg_plugin/master-0001-lavc-svt_hevc-add-libsvt-hevc-encoder-wrapper.patch"
@@ -2557,7 +2501,12 @@ build_ffmpeg() {
           # newer:
           git apply "$work_dir/SVT-VP9_git/ffmpeg_plugin/master-0001-Add-ability-for-ffmpeg-to-run-svt-vp9.patch"
         fi
-		config_options+=" --enable-libsvtvp9"
+        config_options+=" --enable-libsvtvp9"
+      fi
+      # SVT-AV1
+      # Apply patch on newer versions
+      if [[ $ffmpeg_git_checkout_version != *"n6"* ]] && [[ $ffmpeg_git_checkout_version != *"n5"* ]] && [[ $ffmpeg_git_checkout_version != *"n4"* ]] && [[ $ffmpeg_git_checkout_version != *"n3"* ]] && [[ $ffmpeg_git_checkout_version != *"n2"* ]]; then
+        git apply "$work_dir/SVT-AV1_git/.gitlab/workflows/linux/ffmpeg_n7_fix.patch"
       fi
       config_options+=" --enable-libsvtav1"
     fi # else doesn't work/matter with 32 bit
@@ -2593,7 +2542,7 @@ build_ffmpeg() {
       config_options+=" --disable-libmfx"
     fi
     
-    if [[ $ffmpeg_git_checkout_version != *"n6.0"* ]] && [[ $ffmpeg_git_checkout_version != *"n5.1"* ]] && [[ $ffmpeg_git_checkout_version != *"n5.0"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.4"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.3"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.2"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.1"* ]] && [[ $ffmpeg_git_checkout_version != *"n3.4"* ]] && [[ $ffmpeg_git_checkout_version != *"n3.2"* ]] && [[ $ffmpeg_git_checkout_version != *"n2.8"* ]]; then
+    if [[ $ffmpeg_git_checkout_version != *"n6.0"* ]] && [[ $ffmpeg_git_checkout_version != *"n5"* ]] && [[ $ffmpeg_git_checkout_version != *"n4"* ]] && [[ $ffmpeg_git_checkout_version != *"n3"* ]] && [[ $ffmpeg_git_checkout_version != *"n2"* ]]; then
       # Disable libaribcatption on old versions
       config_options+=" --enable-libaribcaption" # libaribcatption (MIT licensed)
     fi
@@ -2709,7 +2658,7 @@ build_ffmpeg() {
 
 build_lsw() {
    # Build L-Smash-Works, which are AviSynth plugins based on lsmash/ffmpeg
-   #eg static # dependency, assume already built since it builds before this does...
+   #build_ffmpeg static # dependency, assume already built since it builds before this does...
    build_lsmash # dependency
    do_git_checkout https://github.com/VFR-maniac/L-SMASH-Works.git lsw
    cd lsw/VapourSynth
@@ -2774,24 +2723,31 @@ build_ffmpeg_dependencies() {
   build_libopenjpeg
   build_glew
   build_glfw
+  #build_libjpeg_turbo # mplayer can use this, VLC qt might need it? [replaces libjpeg] (ffmpeg seems to not need it so commented out here)
   build_libpng # Needs zlib >= 1.0.4. Uses dlfcn.
   build_libwebp # Uses dlfcn.
   build_harfbuzz
+  # harf does now include build_freetype # Uses zlib, bzip2, and libpng.
   build_libxml2 # Uses zlib, liblzma, iconv and dlfcn.
   build_libvmaf
   build_fontconfig # Needs freetype and libxml >= 2.6. Uses iconv and dlfcn.
   build_gmp # For rtmp support configure FFmpeg with '--enable-gmp'. Uses dlfcn.
+  #build_librtmfp # mainline ffmpeg doesn't use it yet
   build_libnettle # Needs gmp >= 3.0. Uses dlfcn.
   build_unistring
   build_libidn2 # needs iconv and unistring
   build_gnutls # Needs nettle >= 3.1, hogweed (nettle) >= 3.1. Uses libidn2, unistring, zlib, and dlfcn.
+  #if [[ "$non_free" = "y" ]]; then
+  #  build_openssl-1.0.2 # Nonfree alternative to GnuTLS. 'build_openssl-1.0.2 "dllonly"' to build shared libraries only.
+  #  build_openssl-1.1.1 # Nonfree alternative to GnuTLS. Can't be used with LibRTMP. 'build_openssl-1.1.1 "dllonly"' to build shared libraries only.
+  #fi
   build_libogg # Uses dlfcn.
   build_libvorbis # Needs libogg >= 1.0. Uses dlfcn.
   build_libopus # Uses dlfcn.
   build_libspeexdsp # Needs libogg for examples. Uses dlfcn.
   build_libspeex # Uses libspeexdsp and dlfcn.
   build_libtheora # Needs libogg >= 1.1. Needs libvorbis >= 1.0.1, sdl and libpng for test, programs and examples [disabled]. Uses dlfcn.
-  build_libsndfile "install-libgsm" # Needs libogg >= 1.1.3 and libvorbis >= 1.2.3 for external support [disabled]. Uses dlfcn. 'build_libsndfile "install-libgsm"' to install the included LibGSM.
+  build_libsndfile "install-libgsm" # Needs libogg >= 1.1.3 and libvorbis >= 1.2.3 for external support [disabled]. Uses dlfcn. 'build_libsndfile "install-libgsm"' to install the included LibGSM 6.10.
   build_mpg123
   build_lame # Uses dlfcn, mpg123
   build_twolame # Uses libsndfile >= 1.0.0 and dlfcn.
@@ -2807,9 +2763,7 @@ build_ffmpeg_dependencies() {
   build_vamp_plugin # Needs libsndfile for 'vamp-simple-host.exe' [disabled].
   build_fftw # Uses dlfcn.
   build_libsamplerate # Needs libsndfile >= 1.0.6 and fftw >= 0.15.0 for tests. Uses dlfcn.
-  build_librubberband
-  #build_libqrencode # Add this line to build qrencode
-  #build_libquirc # Add this line to build libquirc # Needs libsamplerate, libsndfile, fftw and vamp_plugin. 'configure' will fail otherwise. Eventhough librubberband doesn't necessarily need them (libsndfile only for 'rubberband'[...]
+  build_librubberband # Needs libsamplerate, libsndfile, fftw and vamp_plugin. 'configure' will fail otherwise. Eventhough librubberband doesn't necessarily need them (libsndfile only for 'rubberband.exe' and vamp_plugin only for "Vamp audio analysis plugin"). How to use the bundled libraries '-DUSE_SPEEX' and '-DUSE_KISSFFT'?
   build_frei0r # Needs dlfcn. could use opencv...
   if [[ "$bits_target" != "32" ]]; then
     if [[ $build_svt_hevc = y ]]; then
@@ -2821,6 +2775,7 @@ build_ffmpeg_dependencies() {
     build_svt-av1
   fi
   build_vidstab
+  #build_facebooktransform360 # needs modified ffmpeg to use it so not typically useful
   build_libmysofa # Needed for FFmpeg's SOFAlizer filter (https://ffmpeg.org/ffmpeg-filters.html#sofalizer). Uses dlfcn.
   if [[ "$non_free" = "y" ]]; then
     build_fdk-aac # Uses dlfcn.
@@ -2831,19 +2786,25 @@ build_ffmpeg_dependencies() {
   build_zvbi # Uses iconv, libpng and dlfcn.
   build_fribidi # Uses dlfcn.
   build_libass # Needs freetype >= 9.10.3 (see https://bugs.launchpad.net/ubuntu/+source/freetype1/+bug/78573 o_O) and fribidi >= 0.19.0. Uses fontconfig >= 2.10.92, iconv and dlfcn.
+
   build_libxvid # FFmpeg now has native support, but libxvid still provides a better image.
   build_libsrt # requires gnutls, mingw-std-threads
-  if [[ $ffmpeg_git_checkout_version != *"n6.0"* ]] && [[ $ffmpeg_git_checkout_version != *"n5.1"* ]] && [[ $ffmpeg_git_checkout_version != *"n5.0"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.4"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.3"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.2"* ]] && [[ $ffmpeg_git_checkout_version != *"n4.1"* ]] && [[ $ffmpeg_git_checkout_version != *"n3.4"* ]] && [[ $ffmpeg_git_checkout_version != *"n3.2"* ]] && [[ $ffmpeg_git_checkout_version != *"n2.8"* ]]; then
+  if [[ $ffmpeg_git_checkout_version != *"n6.0"* ]] && [[ $ffmpeg_git_checkout_version != *"n5"* ]] && [[ $ffmpeg_git_checkout_version != *"n4"* ]] && [[ $ffmpeg_git_checkout_version != *"n3"* ]] && [[ $ffmpeg_git_checkout_version != *"n2"* ]]; then
+    # Disable libaribcatption on old versions
     build_libaribcaption
   fi
   build_libaribb24
   build_libtesseract
   build_lensfun  # requires png, zlib, iconv
+  # build_libtensorflow # broken
   build_libvpx
   build_libx265
   build_libopenh264
   build_libaom
   build_dav1d
+  if [[ $OSTYPE != darwin* ]]; then
+    build_vulkan
+  fi
   build_avisynth
   build_libx264 # at bottom as it might internally build a copy of ffmpeg (which needs all the above deps...
  }
@@ -2922,7 +2883,7 @@ original_cppflags='-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0' # Needed for mingw-w64
 # if you specify a march it needs to first so x264's configure will use it :| [ is that still the case ?]
 
 #flags=$(cat /proc/cpuinfo | grep flags)
-#if [[ $flags =~ "ssse3" ]]; then # See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html, https://gcc.gnu.org/onlinek/gcc/Optimize-Options.html and https://stackoverflow.com/questions/19689014/gcc-difference-between-o3-and-os.
+#if [[ $flags =~ "ssse3" ]]; then # See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html, https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html and https://stackoverflow.com/questions/19689014/gcc-difference-between-o3-and-os.
 #  original_cflags='-march=core2 -O2'
 #elif [[ $flags =~ "sse3" ]]; then
 #  original_cflags='-march=prescott -O2'
