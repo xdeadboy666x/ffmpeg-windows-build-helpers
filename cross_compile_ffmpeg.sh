@@ -1659,7 +1659,7 @@ build_svt-vp9() {
 }
 
 build_svt-av1() {
-  git clone --branch v2.3.0 --depth 1 https://gitlab.com/AOMediaCodec/SVT-AV1.git SVT-AV1_git
+  do_git_checkout https://gitlab.com/AOMediaCodec/SVT-AV1.git
   cd SVT-AV1_git
   cd Build
     do_cmake_from_build_dir .. "-DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_PROCESSOR=AMD64"
@@ -2439,6 +2439,8 @@ build_ffmpeg() {
     config_options+=" --enable-libflite"
     config_options+=" --enable-libfreetype"
     config_options+=" --enable-libfribidi"
+    config_options+=" --enable-libharfbuzz"
+    config_options+=" --enable-filter=drawtext"
     config_options+=" --enable-libgme"
     config_options+=" --enable-libgsm"
     config_options+=" --enable-libilbc"
