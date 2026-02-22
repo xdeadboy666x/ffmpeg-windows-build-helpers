@@ -1378,7 +1378,6 @@ build_libsndfile() {
 build_mpg123() {
   do_svn_checkout svn://scm.orgis.org/mpg123/trunk mpg123_svn r5008 # avoid Think again failure
   cd mpg123_svn
-    autoreconf -fi
     generic_configure
     do_make_and_make_install
   cd ..
@@ -1448,8 +1447,8 @@ build_libmodplug() {
 
 build_libgme() {
   # do_git_checkout https://bitbucket.org/mpyne/game-music-emu.git
-  download_and_unpack_file https://bitbucket.org/mpyne/game-music-emu/downloads/game-music-emu-0.6.3.tar.xz
-  cd game-music-emu-0.6.3
+  download_and_unpack_file https://github.com/libgme/game-music-emu/releases/download/0.6.3/libgme-0.6.3-src.tar.gz libgme-0.6.3
+  cd libgme-0.6.3
     do_cmake_and_install "-DENABLE_UBSAN=0"
   cd ..
 }
@@ -1568,8 +1567,9 @@ build_libsnappy() {
 }
 
 build_vamp_plugin() {
-  download_and_unpack_file https://code.soundsoftware.ac.uk/attachments/download/2691/vamp-plugin-sdk-2.10.0.tar.gz
-  cd vamp-plugin-sdk-2.10.0
+  # original (offline): download_and_unpack_file https://code.soundsoftware.ac.uk/attachments/download/2691/vamp-plugin-sdk-2.10.0.tar.gz
+  download_and_unpack_file https://github.com/vamp-plugins/vamp-plugin-sdk/archive/refs/tags/vamp-plugin-sdk-v2.10.zip vamp-plugin-sdk-vamp-plugin-sdk-v2.10
+  cd vamp-plugin-sdk-vamp-plugin-sdk-v2.10
     apply_patch file://$patch_dir/vamp-plugin-sdk-2.10_static-lib.diff
     if [[ $compiler_flavors != "native" && ! -f src/vamp-sdk/PluginAdapter.cpp.bak ]]; then
       sed -i.bak "s/#include <mutex>/#include <mingw.mutex.h>/" src/vamp-sdk/PluginAdapter.cpp
